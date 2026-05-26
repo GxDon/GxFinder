@@ -1,0 +1,158 @@
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+
+app = FastAPI(title="GxRescueOSINT")
+
+templates = Jinja2Templates(directory="app/templates")
+
+@app.get("/")
+async def root():
+    return {
+        "status": "GxRescueOSINT Online",
+        "version": "1.0"
+    }
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request}
+    )
+import socketio
+from fastapi import FastAPI
+
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins='*'
+)
+
+app = FastAPI()
+
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app)
+
+@sio.event
+async def connect(sid, environ):
+    print(f"Cliente conectado: {sid}")
+
+@sio.event
+async def disconnect(sid):
+    print(f"Cliente desconectado: {sid}")
+import cv2
+
+image_path = "persona.jpg"
+
+img = cv2.imread(image_path)
+
+if img is None:
+    print("Error: No se encontró persona.jpg")
+    exit()
+
+face_detector = cv2.CascadeClassifier(
+    cv2.data.haarcascades +
+    "haarcascade_frontalface_default.xml"
+)
+
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+faces = face_detector.detectMultiScale(
+    gray,
+    scaleFactor=1.1,
+    minNeighbors=4
+)
+
+print(f"Rostros detectados: {len(faces)}")
+
+for (x, y, w, h) in faces:
+    cv2.rectangle(img, (x, y), (x+w, y+h), (0,255,0), 2)
+
+cv2.imshow("Detección Facial", img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GxRescueOSINT</title>
+
+<link
+ rel="stylesheet"
+ href="https://unpkg.com/leaflet/dist/leaflet.css"
+/>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: white;
+}
+
+header {
+    padding: 15px;
+    background: #1e1e1e;
+    text-align: center;
+}
+
+#map {
+    height: 90vh;
+    width: 100%;
+}
+</style>
+</head>
+<body>
+
+<header>
+<h1>GxRescueOSINT Dashboard</h1>
+</header>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+const map = L.map('map').setView([19.4326, -99.1332], 12);
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+L.marker([19.4326, -99.1332])
+    .addTo(map)
+    .bindPopup('Ciudad de México')
+    .openPopup();
+</script>
+
+</body>
+</html>
+version: '3.9'
+
+services:
+
+  api:
+    build: .
+    container_name: gxrescue_api
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: gxrescue_db
+
+    environment:
+      POSTGRES_USER: gxadmin
+      POSTGRES_PASSWORD: gxStrongPass_2026
+      POSTGRES_DB: gxrescue
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
