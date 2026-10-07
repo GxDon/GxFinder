@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+
+import argparse
+import json
+import os
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="GxFinder - búsqueda local de archivos"
+    )
+
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default="."
+    )
+
+    parser.add_argument(
+        "--name"
+    )
+
+    parser.add_argument(
+        "--extension"
+    )
+
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="gx_finder_report.json"
+    )
+
+    args = parser.parse_args()
+
+    if not os.path.isdir(
+        args.path
+    ):
+        raise SystemExit(
+            f"[!] Directorio no encontrado: {args.path}"
+        )
+
+    extension = args.extension
+
+    if extension and not extension.startswith("."):
+        extension = "." + extension
+
+    results = []
+
+    for root, _, files in os.walk(
+        args.path
+    ):
+
+        for filename in files:
+
+            if args.name and filename != args.name:
+                continue
+
+            if (
+                extension
+                and not filename.lower().endswith(
+                    extension.lower()
+                )
+            ):
+                continue
+
+            results.append(
+                os.path.abspath(
+                    os.path.join(
+                        root,
+                        filename
+                    )
+                )
+            )
+
+    report = {
+        "tool": "GxFinder",
+        "path": os.path.abspath(
+            args.path
+        ),
+        "total": len(results),
+        "files": results,
+    }
+
+    with open(
+        args.output,
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        json.dump(
+            report,
+            f,
+            indent=2,
+            ensure_ascii=False
+        )
+
+    print(
+        f"[+] Encontrados: {len(results)}"
+    )
+
+    print(
+        f"[+] Reporte: {args.output}"
+    )
+
+
+if name == "main":
+    main()
